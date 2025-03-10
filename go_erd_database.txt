@@ -1,0 +1,291 @@
+adjustment_items	CREATE TABLE `adjustment_items` (
+ `adjustment_item_id` int(11) NOT NULL AUTO_INCREMENT,
+ `adjustment_id` int(11) NOT NULL,
+ `product_id` int(11) DEFAULT NULL,
+ `material_id` int(11) DEFAULT NULL,
+ `quantity` decimal(10,2) NOT NULL,
+ `direction` enum('Add','Remove') DEFAULT NULL,
+ PRIMARY KEY (`adjustment_item_id`),
+ KEY `adjustment_id` (`adjustment_id`),
+ CONSTRAINT `adjustment_items_ibfk_1` FOREIGN KEY (`adjustment_id`) REFERENCES `stock_adjustments` (`adjustment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+customers	CREATE TABLE `customers` (
+ `customer_id` int(11) NOT NULL AUTO_INCREMENT,
+ `customer_type` enum('Walk-in','Registered') DEFAULT 'Walk-in',
+ `qr_code` varchar(255) DEFAULT NULL,
+ `customer_name` varchar(255) NOT NULL,
+ `contact_number` varchar(20) DEFAULT NULL,
+ `email` varchar(255) DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`customer_id`),
+ UNIQUE KEY `qr_code` (`qr_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+employees	CREATE TABLE `employees` (
+ `employee_id` int(11) NOT NULL AUTO_INCREMENT,
+ `first_name` varchar(255) NOT NULL,
+ `last_name` varchar(255) NOT NULL,
+ `role` enum('Main Admin','Admin','Stock Clerk','Cashier','Gardener','Kitchen Staff','Maintenance') NOT NULL,
+ `contact_number` varchar(20) DEFAULT NULL,
+ `email` varchar(255) DEFAULT NULL,
+ `hire_date` date DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`employee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+finished_products	CREATE TABLE `finished_products` (
+ `product_id` int(11) NOT NULL AUTO_INCREMENT,
+ `product_name` varchar(255) NOT NULL,
+ `category_id` int(11) NOT NULL,
+ `unit_price` decimal(10,2) NOT NULL,
+ `current_stock` int(11) DEFAULT 0,
+ `reorder_level` int(11) DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`product_id`),
+ KEY `category_id` (`category_id`),
+ CONSTRAINT `finished_products_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `product_categories` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+inventory_logs	CREATE TABLE `inventory_logs` (
+ `log_id` int(11) NOT NULL AUTO_INCREMENT,
+ `user_id` int(11) DEFAULT NULL,
+ `action_type` varchar(50) NOT NULL,
+ `description` text DEFAULT NULL,
+ `log_date` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`log_id`),
+ KEY `user_id` (`user_id`),
+ CONSTRAINT `inventory_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+material_categories	CREATE TABLE `material_categories` (
+ `category_id` int(11) NOT NULL AUTO_INCREMENT,
+ `category_name` varchar(255) NOT NULL,
+ `description` text DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ `parent_category_id` int(11) DEFAULT NULL,
+ PRIMARY KEY (`category_id`),
+ KEY `parent_category_id` (`parent_category_id`),
+ CONSTRAINT `material_categories_ibfk_1` FOREIGN KEY (`parent_category_id`) REFERENCES `material_categories` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+payments	CREATE TABLE `payments` (
+ `payment_id` int(11) NOT NULL AUTO_INCREMENT,
+ `order_id` int(11) NOT NULL,
+ `amount` decimal(10,2) NOT NULL,
+ `payment_method` enum('Cash','Credit Card','Mobile Payment') DEFAULT NULL,
+ `transaction_id` varchar(255) DEFAULT NULL,
+ `status` enum('Success','Failed','Pending') DEFAULT NULL,
+ `processed_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`payment_id`),
+ KEY `order_id` (`order_id`),
+ CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `sales_orders` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+product_categories	CREATE TABLE `product_categories` (
+ `category_id` int(11) NOT NULL AUTO_INCREMENT,
+ `category_name` varchar(255) NOT NULL,
+ `parent_category_id` int(11) DEFAULT NULL,
+ `description` text DEFAULT NULL,
+ `display_order` int(11) DEFAULT 0,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`category_id`),
+ KEY `parent_category_id` (`parent_category_id`),
+ CONSTRAINT `product_categories_ibfk_1` FOREIGN KEY (`parent_category_id`) REFERENCES `product_categories` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+product_recipes	CREATE TABLE `product_recipes` (
+ `recipe_id` int(11) NOT NULL AUTO_INCREMENT,
+ `product_id` int(11) NOT NULL,
+ `material_id` int(11) NOT NULL,
+ `quantity_required` decimal(10,2) NOT NULL,
+ PRIMARY KEY (`recipe_id`),
+ KEY `product_id` (`product_id`),
+ KEY `material_id` (`material_id`),
+ CONSTRAINT `product_recipes_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `finished_products` (`product_id`),
+ CONSTRAINT `product_recipes_ibfk_2` FOREIGN KEY (`material_id`) REFERENCES `raw_materials` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+purchase_orders	CREATE TABLE `purchase_orders` (
+ `po_id` int(11) NOT NULL AUTO_INCREMENT,
+ `supplier_id` int(11) NOT NULL,
+ `po_number` varchar(50) NOT NULL,
+ `order_date` datetime DEFAULT current_timestamp(),
+ `expected_delivery` date DEFAULT NULL,
+ `status` enum('Draft','Pending Approval','Approved','Partially Received','Completed','Cancelled') DEFAULT 'Draft',
+ `total_amount` decimal(10,2) DEFAULT NULL,
+ `created_by` int(11) DEFAULT NULL,
+ `notes` text DEFAULT NULL,
+ PRIMARY KEY (`po_id`),
+ UNIQUE KEY `po_number` (`po_number`),
+ KEY `supplier_id` (`supplier_id`),
+ KEY `created_by` (`created_by`),
+ CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`supplier_id`),
+ CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+purchase_order_items	CREATE TABLE `purchase_order_items` (
+ `po_item_id` int(11) NOT NULL AUTO_INCREMENT,
+ `po_id` int(11) NOT NULL,
+ `material_id` int(11) NOT NULL,
+ `ordered_quantity` decimal(10,2) NOT NULL,
+ `received_quantity` decimal(10,2) DEFAULT 0.00,
+ `backorder_quantity` decimal(10,2) DEFAULT 0.00,
+ `unit_price` decimal(10,2) NOT NULL,
+ PRIMARY KEY (`po_item_id`),
+ KEY `po_id` (`po_id`),
+ KEY `material_id` (`material_id`),
+ CONSTRAINT `purchase_order_items_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`),
+ CONSTRAINT `purchase_order_items_ibfk_2` FOREIGN KEY (`material_id`) REFERENCES `raw_materials` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+purchase_returns	CREATE TABLE `purchase_returns` (
+ `return_id` int(11) NOT NULL AUTO_INCREMENT,
+ `po_id` int(11) NOT NULL,
+ `return_date` datetime DEFAULT current_timestamp(),
+ `reason` enum('Damaged Goods','Spoiled Items','Wrong Item','Over Delivery') NOT NULL,
+ `description` text DEFAULT NULL,
+ `status` enum('Pending','Approved','Completed') DEFAULT NULL,
+ `processed_by` int(11) DEFAULT NULL,
+ PRIMARY KEY (`return_id`),
+ KEY `po_id` (`po_id`),
+ KEY `processed_by` (`processed_by`),
+ CONSTRAINT `purchase_returns_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`),
+ CONSTRAINT `purchase_returns_ibfk_2` FOREIGN KEY (`processed_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+qr_sessions	CREATE TABLE `qr_sessions` (
+ `session_id` int(11) NOT NULL AUTO_INCREMENT,
+ `qr_code` varchar(255) NOT NULL,
+ `session_token` varchar(255) NOT NULL,
+ `start_time` datetime DEFAULT current_timestamp(),
+ `end_time` datetime DEFAULT NULL,
+ PRIMARY KEY (`session_id`),
+ KEY `qr_code` (`qr_code`),
+ CONSTRAINT `qr_sessions_ibfk_1` FOREIGN KEY (`qr_code`) REFERENCES `customers` (`qr_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+raw_materials	CREATE TABLE `raw_materials` (
+ `material_id` int(11) NOT NULL AUTO_INCREMENT,
+ `material_name` varchar(255) NOT NULL,
+ `category_id` int(11) DEFAULT NULL,
+ `unit` varchar(50) NOT NULL,
+ `current_stock` decimal(10,2) DEFAULT 0.00,
+ `reorder_level` decimal(10,2) DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`material_id`),
+ KEY `category_id` (`category_id`),
+ CONSTRAINT `raw_materials_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `material_categories` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+received_items	CREATE TABLE `received_items` (
+ `receive_item_id` int(11) NOT NULL AUTO_INCREMENT,
+ `receive_id` int(11) NOT NULL,
+ `po_item_id` int(11) NOT NULL,
+ `quantity_received` decimal(10,2) NOT NULL,
+ `quality_status` enum('Good','Damaged','Expired') DEFAULT 'Good',
+ PRIMARY KEY (`receive_item_id`),
+ KEY `receive_id` (`receive_id`),
+ KEY `po_item_id` (`po_item_id`),
+ CONSTRAINT `received_items_ibfk_1` FOREIGN KEY (`receive_id`) REFERENCES `received_orders` (`receive_id`),
+ CONSTRAINT `received_items_ibfk_2` FOREIGN KEY (`po_item_id`) REFERENCES `purchase_order_items` (`po_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+received_orders	CREATE TABLE `received_orders` (
+ `receive_id` int(11) NOT NULL AUTO_INCREMENT,
+ `po_id` int(11) NOT NULL,
+ `receive_date` datetime DEFAULT current_timestamp(),
+ `received_by` int(11) DEFAULT NULL,
+ `notes` text DEFAULT NULL,
+ PRIMARY KEY (`receive_id`),
+ KEY `po_id` (`po_id`),
+ KEY `received_by` (`received_by`),
+ CONSTRAINT `received_orders_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`po_id`),
+ CONSTRAINT `received_orders_ibfk_2` FOREIGN KEY (`received_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+return_items	CREATE TABLE `return_items` (
+ `return_item_id` int(11) NOT NULL AUTO_INCREMENT,
+ `return_id` int(11) NOT NULL,
+ `receive_item_id` int(11) NOT NULL,
+ `quantity` decimal(10,2) NOT NULL,
+ PRIMARY KEY (`return_item_id`),
+ KEY `return_id` (`return_id`),
+ KEY `receive_item_id` (`receive_item_id`),
+ CONSTRAINT `return_items_ibfk_1` FOREIGN KEY (`return_id`) REFERENCES `purchase_returns` (`return_id`),
+ CONSTRAINT `return_items_ibfk_2` FOREIGN KEY (`receive_item_id`) REFERENCES `received_items` (`receive_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+sales_orders	CREATE TABLE `sales_orders` (
+ `order_id` int(11) NOT NULL AUTO_INCREMENT,
+ `order_type` enum('Walk-in','QR') NOT NULL,
+ `customer_id` int(11) DEFAULT NULL,
+ `order_date` datetime DEFAULT current_timestamp(),
+ `total_amount` decimal(10,2) NOT NULL,
+ `payment_method` enum('Cash','Credit Card','Mobile Payment') DEFAULT NULL,
+ `payment_status` enum('Pending','Completed','Refunded') DEFAULT 'Pending',
+ `cashier_id` int(11) DEFAULT NULL,
+ `status` enum('Pending','Partially Fulfilled','Fulfilled','Cancelled') DEFAULT 'Pending',
+ PRIMARY KEY (`order_id`),
+ KEY `customer_id` (`customer_id`),
+ KEY `cashier_id` (`cashier_id`),
+ CONSTRAINT `sales_orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`),
+ CONSTRAINT `sales_orders_ibfk_2` FOREIGN KEY (`cashier_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+sales_order_items	CREATE TABLE `sales_order_items` (
+ `order_item_id` int(11) NOT NULL AUTO_INCREMENT,
+ `order_id` int(11) NOT NULL,
+ `product_id` int(11) NOT NULL,
+ `ordered_quantity` int(11) NOT NULL,
+ `fulfilled_quantity` int(11) DEFAULT 0,
+ `unit_price` decimal(10,2) NOT NULL,
+ PRIMARY KEY (`order_item_id`),
+ KEY `order_id` (`order_id`),
+ KEY `product_id` (`product_id`),
+ CONSTRAINT `sales_order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `sales_orders` (`order_id`),
+ CONSTRAINT `sales_order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `finished_products` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+stock_adjustments	CREATE TABLE `stock_adjustments` (
+ `adjustment_id` int(11) NOT NULL AUTO_INCREMENT,
+ `adjustment_type` enum('Damage','Spoilage','Theft','Other') DEFAULT NULL,
+ `adjustment_date` datetime DEFAULT current_timestamp(),
+ `notes` text DEFAULT NULL,
+ `adjusted_by` int(11) DEFAULT NULL,
+ PRIMARY KEY (`adjustment_id`),
+ KEY `adjusted_by` (`adjusted_by`),
+ CONSTRAINT `stock_adjustments_ibfk_1` FOREIGN KEY (`adjusted_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+suppliers	CREATE TABLE `suppliers` (
+ `supplier_id` int(11) NOT NULL AUTO_INCREMENT,
+ `supplier_name` varchar(255) NOT NULL,
+ `contact_person` varchar(255) DEFAULT NULL,
+ `address` text DEFAULT NULL,
+ `contact_number` varchar(20) DEFAULT NULL,
+ `email` varchar(255) DEFAULT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`supplier_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+supplier_back_orders	CREATE TABLE `supplier_back_orders` (
+ `backorder_id` int(11) NOT NULL AUTO_INCREMENT,
+ `po_item_id` int(11) NOT NULL,
+ `quantity_remaining` decimal(10,2) NOT NULL,
+ `expected_delivery` date DEFAULT NULL,
+ `status` enum('Pending','Partially Fulfilled','Completed') DEFAULT NULL,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`backorder_id`),
+ KEY `po_item_id` (`po_item_id`),
+ CONSTRAINT `supplier_back_orders_ibfk_1` FOREIGN KEY (`po_item_id`) REFERENCES `purchase_order_items` (`po_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+tbl_2fa_codes	CREATE TABLE `tbl_2fa_codes` (
+ `code_id` int(11) NOT NULL AUTO_INCREMENT,
+ `user_id` int(11) NOT NULL,
+ `code` varchar(8) NOT NULL,
+ `expiration` datetime NOT NULL,
+ `used` tinyint(1) DEFAULT 0,
+ `created_at` datetime DEFAULT current_timestamp(),
+ PRIMARY KEY (`code_id`),
+ KEY `user_id` (`user_id`),
+ KEY `code` (`code`),
+ CONSTRAINT `tbl_2fa_codes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+users	CREATE TABLE `users` (
+ `user_id` int(11) NOT NULL AUTO_INCREMENT,
+ `employee_id` int(11) DEFAULT NULL,
+ `username` varchar(255) NOT NULL,
+ `password` varchar(255) NOT NULL,
+ `status` tinyint(1) DEFAULT 1,
+ PRIMARY KEY (`user_id`),
+ UNIQUE KEY `username` (`username`),
+ UNIQUE KEY `employee_id` (`employee_id`),
+ CONSTRAINT `users_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
